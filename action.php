@@ -3,23 +3,23 @@
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Jason Grout <jason-doku@creativetrax.com>>
- * 
- * Modifications by Sergio (1 Apr 2007), an unidentified author, 
+ *
+ * Modifications by Sergio (1 Apr 2007), an unidentified author,
  * and  Niko Paltzer (15 Jan 2010).
  *
  *  brought up-to-date with current Dokuwiki Event changes
  *  and event handling by Myron Turner (April 7 2011);
  *  new security features (September 2 2011)
- *  turnermm02@shaw.ca     
+ *  turnermm02@shaw.ca
  */
- 
+
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
- 
+
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
 require_once(DOKU_PLUGIN.'action.php');
 require_once(DOKU_INC.'inc/init.php');
- 
+
 class action_plugin_newpagetemplate extends DokuWiki_Action_Plugin {
    var $done = false;
    var $allow = true;
@@ -36,12 +36,12 @@ class action_plugin_newpagetemplate extends DokuWiki_Action_Plugin {
       'url'    => '',
     );
   }
- 
+
   /**
    * register the eventhandlers
-   *  Modified by 
+   *  Modified by
    *  @author Myron Turner
-   *  turnermm02@shaw.ca     
+   *  turnermm02@shaw.ca
    */
   function register(Doku_Event_Handler $contr){
 
@@ -54,39 +54,39 @@ class action_plugin_newpagetemplate extends DokuWiki_Action_Plugin {
 
   /**
    *  pagefromtemplate
-   *  Modified by 
+   *  Modified by
    *  @author Myron Turner
-   *  turnermm02@shaw.ca     
+   *  turnermm02@shaw.ca
    */
- 
-  function pagefromtemplate(Doku_Event $event, $param) {  
+
+  function pagefromtemplate(Doku_Event $event, $param) {
     if($this->done) return;
     $this->done=true;
-    
+
     if(strlen(trim($_REQUEST['newpagetemplate']))>0) {
-	if(!$this->allow) {	 
+	if(!$this->allow) {
 	   return ;
 	}
       global $conf;
       global $INFO;
       global $ID;
-	
+
       $tpl = io_readFile(wikiFN($_REQUEST['newpagetemplate']));
- 
+
       if($this->getConf('userreplace')) {
         $stringvars =
-             array_map(create_function('$v', 'return explode(",",$v,2);'),
+             array_map(create_function('$v', 'return explode($this->getConf("param_separator"),$v,2);'),
                  explode(';',$_REQUEST['newpagevars']));
         foreach($stringvars as $value) {
              $tpl = str_replace(trim($value[0]),hsc(trim($value[1])),$tpl);
 	    }
      }
- 
+
       if($this->getConf('standardreplace')) {
         // replace placeholders
-        $file = noNS($ID);       
+        $file = noNS($ID);
         $page = cleanID($file) ;
-        if($this->getConf('prettytitles')) {        
+        if($this->getConf('prettytitles')) {
             $title= str_replace('_',' ',$page);
         }
        else {
@@ -117,14 +117,14 @@ class action_plugin_newpagetemplate extends DokuWiki_Action_Plugin {
                               $page,
                               utf8_ucfirst($title),
                               utf8_ucwords($title),
-                              utf8_strtoupper($title),                              
+                              utf8_strtoupper($title),
                               $_SERVER['REMOTE_USER'],
                               $INFO['userinfo']['name'],
                               $INFO['userinfo']['mail'],
                               $conf['dformat'],
                               $event->name ,
                            ), $tpl);
- 
+
         // we need the callback to work around strftime's char limit
         $tpl = preg_replace_callback('/%./',create_function('$m','return strftime($m[0]);'),$tpl);
       }
@@ -134,28 +134,28 @@ class action_plugin_newpagetemplate extends DokuWiki_Action_Plugin {
 	  if($event->name == 'HTML_PAGE_FROMTEMPLATE') {
 	     $event->result=$tpl;
 	  }
-	  else { 
+	  else {
          $event->data['tpl'] = $tpl;
       }
-      $event->preventDefault(); 
+      $event->preventDefault();
     }
   }
 
   function check_acl(Doku_Event $event,$param) {
     if(strlen(trim($_REQUEST['newpagetemplate']))>0) {
        $pg = trim($_REQUEST['newpagetemplate'],':');
-       $auth =auth_quickaclcheck($pg);	
+       $auth =auth_quickaclcheck($pg);
 	   if($auth < 4)   $this->allow = false;
 	   }
    }
-   
+
   function write_msg (&$event,$param) {
-    if($this->allow) return; 
+    if($this->allow) return;
     global $ID,$INPUT;
-    
+
     echo"<h1> Permission Denied </h1>";
-    echo "You do not have access to the template  " . htmlentities($INPUT->str('newpagetemplate')) . '</br>';	 
-	unlock($ID); 
-	$event->preventDefault(); 
+    echo "You do not have access to the template  " . htmlentities($INPUT->str('newpagetemplate')) . '</br>';
+	unlock($ID);
+	$event->preventDefault();
   }
 }
