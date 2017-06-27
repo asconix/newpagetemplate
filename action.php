@@ -74,9 +74,10 @@ class action_plugin_newpagetemplate extends DokuWiki_Action_Plugin {
       $tpl = io_readFile(wikiFN($_REQUEST['newpagetemplate']));
 
       if($this->getConf('userreplace')) {
+        $param_sep = $this->getConf('param_separator');
         $stringvars =
-             array_map(create_function('$v', 'return explode($this->getConf("param_separator"),$v,2);'),
-                 explode(';',$_REQUEST['newpagevars']));
+          array_map(create_function('$v', sprintf('return explode("%s",$v,2);', $param_sep)),
+              explode(';',$_REQUEST['newpagevars']));
         foreach($stringvars as $value) {
              $tpl = str_replace(trim($value[0]),hsc(trim($value[1])),$tpl);
 	    }
